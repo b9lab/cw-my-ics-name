@@ -1,7 +1,9 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
 #[cw_serde]
-pub struct InstantiateMsg {}
+pub struct InstantiateMsg {
+    pub vouchers_addr: Option<String>,
+}
 
 #[cw_serde]
 pub enum ExecuteMsg {}
@@ -11,4 +13,6 @@ pub enum ExecuteMsg {}
 pub enum QueryMsg {}
 
 #[cw_serde]
-pub enum SudoMsg {}
+pub enum SudoMsg {
+    UpdateVouchersAddr(Option<String>),
+}
