@@ -1,5 +1,6 @@
 use crate::{
     error::ContractError,
+    ibc::helpers::compute_voucher_token_id,
     msg::{
         CollectionExecuteMsg, CollectionQueryMsg, ExecuteMsg, IbcPacketMessage, InstantiateMsg,
         QueryMsg, SudoMsg,
@@ -48,6 +49,20 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> C
             token_id,
             channel_id,
         ),
+        ExecuteMsg::IbcReturnName {
+            collection,
+            receiver_addr,
+            token_id,
+            channel_id,
+        } => execute_ibc_return(
+            deps,
+            env,
+            info,
+            collection,
+            receiver_addr,
+            token_id,
+            channel_id,
+        ),
     }
 }
 
@@ -84,6 +99,48 @@ fn execute_ibc_tranfer(
     Ok(Response::default()
         .add_message(escrow_exec_msg)
         .add_message(transfer_packet))
+}
+
+fn execute_ibc_return(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    collection: String,
+    receiver_addr: String,
+    token_id: String,
+    channel_id: String,
+) -> ContractResult {
+    let voucher_collection: String = VOUCHERS_ADDR.load(deps.storage)?;
+    let voucher_token_id = compute_voucher_token_id(&channel_id, &collection, &token_id);
+    validate_sender_is_owner(&deps, &info, &voucher_collection, &voucher_token_id)?;
+    let escrow_msg = CollectionExecuteMsg::TransferNft {
+        recipient: env.contract.address.to_string(),
+        token_id: voucher_token_id,
+    };
+    let escrow_wasm_msg = WasmMsg::Execute {
+        contract_addr: voucher_collection.to_owned(),
+        msg: to_json_binary(&escrow_msg)?,
+        funds: vec![],
+    };
+    let escrow_event = Event::new("ibc-voucher-escrow")
+        .add_attribute("channel", channel_id.to_owned())
+        .add_attribute("original-collection", collection.to_owned())
+        .add_attribute("token_id", token_id.to_owned());
+    let return_msg = IbcPacketMessage::ReturnName {
+        collection,
+        token_id,
+        sender_addr: info.sender.to_string(),
+        receiver_addr: receiver_addr.to_owned(),
+    };
+    let return_packet = IbcMsg::SendPacket {
+        channel_id,
+        data: to_json_binary(&return_msg)?,
+        timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(120)),
+    };
+    Ok(Response::default()
+        .add_message(escrow_wasm_msg)
+        .add_event(escrow_event)
+        .add_message(return_packet))
 }
 
 pub fn validate_sender_is_owner(

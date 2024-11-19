@@ -18,6 +18,12 @@ pub enum ExecuteMsg {
         token_id: String,
         receiver_addr: String,
     },
+    IbcReturnName {
+        channel_id: String,
+        collection: String,
+        token_id: String,
+        receiver_addr: String,
+    },
 }
 
 #[cw_serde]
@@ -33,6 +39,12 @@ pub enum SudoMsg {
 #[cw_serde]
 pub enum IbcPacketMessage {
     TransferName {
+        collection: String,
+        token_id: String,
+        sender_addr: String,
+        receiver_addr: String,
+    },
+    ReturnName {
         collection: String,
         token_id: String,
         sender_addr: String,
