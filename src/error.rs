@@ -13,4 +13,6 @@ pub enum ContractError {
     ChannelAlreadyExists { channel_id: String },
     #[error("The channel cant be closed")]
     CantCloseChannel,
+    #[error("Only token owner can do this action")]
+    OnlyOwner,
 }

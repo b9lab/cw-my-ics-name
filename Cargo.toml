@@ -28,6 +28,7 @@ cosmwasm-schema = "1.5.8"
 cosmwasm-std = "1.5.8"
 cw-storage-plus = "1.2.0"
 cw721 = { git = "https://github.com/public-awesome/cw-nfts", tag = "v0.19.0", version = "0.19.0" }
+sha2 = "0.10.8"
 thiserror = "1.0.63"
 
 [dev-dependencies]
